@@ -45,6 +45,32 @@ If you have an NVIDIA GPU with nvidia-container-toolkit installed (Linux only):
 make setup-gpu  # Setup with GPU acceleration
 ```
 
+### Apple Container (Experimental)
+
+On macOS 26+ (Tahoe) with Apple Silicon, you can run Ollama natively without Docker using [Apple Container](https://github.com/apple/container):
+
+```bash
+make apple-container              # Run with llama3.2:1b
+make apple-container llama3.2:3b  # Run with a different model
+```
+
+This provides:
+- No Docker Desktop required
+- Native Apple Silicon performance
+- Sub-second container startup
+- VM-level isolation per container
+
+**Requirements**: macOS 26+, Apple Silicon, [Apple Container CLI](https://github.com/apple/container/releases)
+
+**Cleanup**:
+```bash
+container stop ollama-test           # Stop the container
+container delete ollama-test         # Remove the container
+container image rm ollama/ollama     # Remove the image (reclaims ~18GB)
+```
+
+**Note**: This is a standalone Ollama setup. For the full experience with Web UI and voice features, use the Docker Compose setup (`make setup`).
+
 ## Available Models
 
 - **llama3.2:1b** - Fastest, CPU-friendly (default)
@@ -97,6 +123,9 @@ make web                # Show Web UI URL
 # Cleanup
 make clean              # Clean up containers/volumes
 make reset              # Full reset (removes all data)
+
+# Experimental
+make apple-container    # Run Ollama via Apple Container (macOS 26+)
 ```
 
 ## Voice Features (Pre-configured)

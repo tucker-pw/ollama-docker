@@ -51,6 +51,9 @@ help: ## Show this help message
 	@printf "  $(YELLOW)make clean$(RESET)          - Clean up project containers/volumes\n"
 	@printf "  $(YELLOW)make reset$(RESET)          - Full reset (with confirmation)\n"
 	@printf "\n"
+	@printf "$(GREEN)Experimental:$(RESET)\n"
+	@printf "  $(YELLOW)make apple-container$(RESET) - Test with Apple Container (macOS 26+)\n"
+	@printf "\n"
 	@printf "$(GREEN)Examples:$(RESET)\n"
 	@printf "  make setup\n"
 	@printf "  make switch llama3.2:11b\n"
@@ -195,3 +198,9 @@ config: ## Show current configuration
 	@echo "Host: $(grep OLLAMA_HOST .env 2>/dev/null | cut -d'=' -f2 || echo 'Not set')"
 	@echo ""
 	@bash scripts/setup.sh status 2>/dev/null || echo "Services not running"
+
+# Experimental: Apple Container support (macOS 26+)
+apple-container: ## Test Ollama with Apple Container (no Docker needed)
+	@printf "$(BLUE)Testing Apple Container...$(RESET)\n"
+	@printf "$(YELLOW)Requires: macOS 26 (Tahoe) + Apple Silicon$(RESET)\n"
+	@bash scripts/apple-container-test.sh $(filter-out $@,$(MAKECMDGOALS))
