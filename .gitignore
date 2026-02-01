@@ -1,0 +1,35 @@
+# Environment files
+.env
+
+# Docker volumes (if mounted locally)
+data/
+volumes/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.bak
+*.backup
+docker-compose-amd.yml.bak

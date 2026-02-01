@@ -20,67 +20,73 @@ ARGS := $(filter-out $@,$(MAKECMDGOALS))
 	@:
 
 help: ## Show this help message
-	@echo -e "$(BLUE)Ollama Project$(RESET)"
-	@echo "======================"
-	@echo -e "$(GREEN)GPU Configuration:$(RESET)"
-	@echo -e "  $(YELLOW)make setup-nvidia$(RESET)   - Configure for NVIDIA GPU (default)"
-	@echo -e "  $(YELLOW)make setup-amd$(RESET)      - Configure for AMD GPU (ROCm)"
-	@echo -e "  $(YELLOW)make test-gpu$(RESET)       - Test current GPU configuration"
-	@echo ""
-	@echo -e "$(GREEN)Setup & Control:$(RESET)"
-	@echo -e "  $(YELLOW)make setup$(RESET)          - Initial setup (build, start, pull model)"
-	@echo -e "  $(YELLOW)make start$(RESET)          - Start all services"
-	@echo -e "  $(YELLOW)make stop$(RESET)           - Stop all services"  
-	@echo -e "  $(YELLOW)make restart$(RESET)        - Restart all services"
-	@echo -e "  $(YELLOW)make status$(RESET)         - Show service status"
-	@echo -e "  $(YELLOW)make logs$(RESET)           - Show service logs"
-	@echo ""
-	@echo -e "$(GREEN)Model Management:$(RESET)"
-	@echo -e "  $(YELLOW)make list-models$(RESET)    - List available models"
-	@echo -e "  $(YELLOW)make switch MODEL$(RESET)   - Switch to a model (e.g., make switch llama3.2:1b)"
-	@echo -e "  $(YELLOW)make pull MODEL$(RESET)     - Download a model"
-	@echo ""
-	@echo -e "$(GREEN)Usage:$(RESET)"
-	@echo -e "$(GREEN)Usage:$(RESET)"
-	@echo -e "  $(YELLOW)make web$(RESET)            - Open web UI (http://localhost:3000)"
-	@echo ""
-	@echo -e "$(GREEN)Model Shortcuts:$(RESET)"
-	@echo -e "  $(YELLOW)make cpu$(RESET)            - CPU-optimized model (llama3.2:1b - default)"
-	@echo -e "  $(YELLOW)make gpu$(RESET)            - GPU-optimized model (llama3.2:3b)"
-	@echo -e "  $(YELLOW)make quality$(RESET)        - Best quality (llama3.2:11b - requires GPU)" 
-	@echo -e "  $(YELLOW)make code$(RESET)           - Code-focused (codellama:7b - requires GPU)"
-	@echo ""
-	@echo -e "$(GREEN)Cleanup:$(RESET)"
-	@echo -e "  $(YELLOW)make clean$(RESET)          - Clean up project containers/volumes"
-	@echo -e "  $(YELLOW)make reset$(RESET)          - Full reset (with confirmation)"
-	@echo ""
-	@echo -e "$(GREEN)Examples:$(RESET)"
-	@echo "  make setup"
-	@echo "  make switch llama3.2:11b"
-	@echo "  make chat"
+	@printf "$(BLUE)Ollama Project$(RESET)\n"
+	@printf "======================\n"
+	@printf "$(GREEN)Setup & Control:$(RESET)\n"
+	@printf "  $(YELLOW)make setup$(RESET)          - Initial setup (CPU mode)\n"
+	@printf "  $(YELLOW)make setup-gpu$(RESET)      - Initial setup with NVIDIA GPU\n"
+	@printf "  $(YELLOW)make start$(RESET)          - Start services (CPU mode)\n"
+	@printf "  $(YELLOW)make start-gpu$(RESET)      - Start with GPU support\n"
+	@printf "  $(YELLOW)make stop$(RESET)           - Stop all services\n"
+	@printf "  $(YELLOW)make restart$(RESET)        - Restart all services\n"
+	@printf "  $(YELLOW)make status$(RESET)         - Show service status\n"
+	@printf "  $(YELLOW)make logs$(RESET)           - Show service logs\n"
+	@printf "\n"
+	@printf "$(GREEN)Model Management:$(RESET)\n"
+	@printf "  $(YELLOW)make list-models$(RESET)    - List available models\n"
+	@printf "  $(YELLOW)make switch MODEL$(RESET)   - Switch to a model (e.g., make switch llama3.2:1b)\n"
+	@printf "  $(YELLOW)make pull MODEL$(RESET)     - Download a model\n"
+	@printf "  $(YELLOW)make pull-hf MODEL$(RESET)  - Download from HuggingFace (bypasses VPN/cert issues)\n"
+	@printf "\n"
+	@printf "$(GREEN)Usage:$(RESET)\n"
+	@printf "  $(YELLOW)make web$(RESET)            - Open web UI (http://localhost:3000)\n"
+	@printf "\n"
+	@printf "$(GREEN)Model Shortcuts:$(RESET)\n"
+	@printf "  $(YELLOW)make cpu$(RESET)            - CPU-optimized model (llama3.2:1b - default)\n"
+	@printf "  $(YELLOW)make gpu$(RESET)            - GPU-optimized model (llama3.2:3b)\n"
+	@printf "  $(YELLOW)make quality$(RESET)        - Best quality (llama3.2:11b - requires GPU)\n"
+	@printf "  $(YELLOW)make code$(RESET)           - Code-focused (codellama:7b - requires GPU)\n"
+	@printf "\n"
+	@printf "$(GREEN)Cleanup:$(RESET)\n"
+	@printf "  $(YELLOW)make clean$(RESET)          - Clean up project containers/volumes\n"
+	@printf "  $(YELLOW)make reset$(RESET)          - Full reset (with confirmation)\n"
+	@printf "\n"
+	@printf "$(GREEN)Examples:$(RESET)\n"
+	@printf "  make setup\n"
+	@printf "  make switch llama3.2:11b\n"
+	@printf "  make web\n"
 
 # Setup & Control Commands
-setup: ## Initial setup and start
-	@echo -e "$(BLUE)Setting up Ollama Project...$(RESET)"
+setup: ## Initial setup and start (CPU mode)
+	@printf "$(BLUE)Setting up Ollama Project (CPU mode)...$(RESET)\n"
 	@bash scripts/setup.sh setup
 
-start: ## Start all services
-	@echo -e "$(BLUE)Starting services...$(RESET)"
+setup-gpu: ## Initial setup with NVIDIA GPU support
+	@printf "$(BLUE)Setting up Ollama Project (GPU mode)...$(RESET)\n"
+	@printf "$(YELLOW)Note: Requires NVIDIA GPU + nvidia-container-toolkit$(RESET)\n"
+	@bash scripts/setup.sh setup-gpu
+
+start: ## Start all services (CPU mode)
+	@printf "$(BLUE)Starting services...$(RESET)\n"
 	@bash scripts/setup.sh start
 
+start-gpu: ## Start all services with GPU support
+	@printf "$(BLUE)Starting services with GPU support...$(RESET)\n"
+	@bash scripts/setup.sh start-gpu
+
 stop: ## Stop all services
-	@echo -e "$(BLUE)Stopping services...$(RESET)"
+	@printf "$(BLUE)Stopping services...$(RESET)\n"
 	@bash scripts/setup.sh stop
 
 restart: ## Restart all services
-	@echo -e "$(BLUE)Restarting services...$(RESET)"
+	@printf "$(BLUE)Restarting services...$(RESET)\n"
 	@docker compose restart
 
 status: ## Show service status
-	@echo -e "$(BLUE)Service Status:$(RESET)"
+	@printf "$(BLUE)Service Status:$(RESET)\n"
 	@bash scripts/setup.sh status
-	@echo ""
-	@echo -e "$(BLUE)Current Model:$(RESET)"
+	@printf "\n"
+	@printf "$(BLUE)Current Model:$(RESET)\n"
 	@bash scripts/model-manager.sh status
 
 logs: ## Show service logs
@@ -92,47 +98,57 @@ list-models: ## List available models
 
 pull: ## Download a model (usage: make pull llama3.2:1b)
 	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
-		echo -e "$(RED)Error: Please specify a model$(RESET)"; \
-		echo "Usage: make pull <model>"; \
-		echo "Example: make pull llama3.2:1b"; \
+		printf "$(RED)Error: Please specify a model$(RESET)\n"; \
+		printf "Usage: make pull <model>\n"; \
+		printf "Example: make pull llama3.2:1b\n"; \
 		bash scripts/model-manager.sh list; \
 	else \
 		bash scripts/model-manager.sh pull $(filter-out $@,$(MAKECMDGOALS)); \
 	fi
 
-switch: ## Switch to a model (usage: make switch llama3.2:11b) 
+pull-hf: ## Download from HuggingFace (bypasses VPN/cert issues)
 	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
-		echo -e "$(RED)Error: Please specify a model$(RESET)"; \
-		echo "Usage: make switch <model>"; \
-		echo "Example: make switch llama3.2:11b"; \
+		printf "$(RED)Error: Please specify a model$(RESET)\n"; \
+		printf "Usage: make pull-hf <model>\n"; \
+		printf "Example: make pull-hf llama3.2:1b\n"; \
+		printf "$(YELLOW)Currently supported: llama3.2:1b, llama3.2:3b$(RESET)\n"; \
+	else \
+		bash scripts/download-model-hf.sh $(filter-out $@,$(MAKECMDGOALS)); \
+	fi
+
+switch: ## Switch to a model (usage: make switch llama3.2:11b)
+	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
+		printf "$(RED)Error: Please specify a model$(RESET)\n"; \
+		printf "Usage: make switch <model>\n"; \
+		printf "Example: make switch llama3.2:11b\n"; \
 		bash scripts/model-manager.sh list; \
 	else \
 		bash scripts/model-manager.sh switch $(filter-out $@,$(MAKECMDGOALS)); \
 	fi
 
 # Usage Commands
-web: ## Show web UI URL  
-	@echo -e "$(BLUE)Web UI available at:$(RESET)"
-	@echo -e "$(GREEN)http://localhost:3000$(RESET)"
-	@echo ""
-	@echo -e "$(YELLOW)Make sure services are running first (make start)$(RESET)"
+web: ## Show web UI URL
+	@printf "$(BLUE)Web UI available at:$(RESET)\n"
+	@printf "$(GREEN)http://localhost:3000$(RESET)\n"
+	@printf "\n"
+	@printf "$(YELLOW)Make sure services are running first (make start)$(RESET)\n"
 
 # Cleanup Commands
 clean: ## Clean up project containers and volumes
-	@echo -e "$(BLUE)Cleaning up project...$(RESET)"
+	@printf "$(BLUE)Cleaning up project...$(RESET)\n"
 	@bash scripts/cleanup.sh quick
-	@echo -e "$(BLUE)Removing unused networks...$(RESET)"
+	@printf "$(BLUE)Removing unused networks...$(RESET)\n"
 	@docker network prune -f
-	@echo -e "$(GREEN)Cleanup complete$(RESET)"
+	@printf "$(GREEN)Cleanup complete$(RESET)\n"
 
-reset: ## Full reset with confirmation  
-	@echo -e "$(YELLOW)This will completely reset your project!$(RESET)"
+reset: ## Full reset with confirmation
+	@printf "$(YELLOW)This will completely reset your project!$(RESET)\n"
 	@bash scripts/cleanup.sh reset
 
 # Development shortcuts
-dev: start chat ## Start services and immediately open chat
+dev: start web ## Start services and show web UI link
 
-quick-switch: ## Quick switch to llama3.2:1b (fastest model)
+quick-switch: ## Quick switch to llama3.2:3b (balanced model)
 	@bash scripts/model-manager.sh switch llama3.2:3b
 
 # Check if required files exist
@@ -169,40 +185,12 @@ fast: cpu ## Alias for cpu (backward compatibility)
 
 balanced: gpu ## Alias for gpu (backward compatibility)
 
-# GPU Configuration Commands
-setup-nvidia: ## Configure for NVIDIA GPU (default)
-	@echo -e "$(BLUE)Configuring for NVIDIA GPU...$(RESET)"
-	@if [ -f docker-compose-amd.yml.bak ]; then \
-		cp docker-compose-amd.yml.bak docker-compose.yml; \
-		echo -e "$(GREEN)Switched to NVIDIA GPU configuration$(RESET)"; \
-	else \
-		echo -e "$(GREEN)Already using NVIDIA GPU configuration$(RESET)"; \
-	fi
-
-setup-amd: ## Configure for AMD GPU (ROCm)
-	@echo -e "$(BLUE)Setting up AMD GPU support...$(RESET)"
-	@chmod +x scripts/setup-amd.sh
-	@bash scripts/setup-amd.sh
-	@echo -e "$(GREEN)AMD GPU setup complete$(RESET)"
-
-test-gpu: ## Test current GPU configuration
-	@echo -e "$(BLUE)Testing GPU configuration...$(RESET)"
-	@if grep -q "nvidia" docker-compose.yml 2>/dev/null; then \
-		echo "Current config: NVIDIA GPU"; \
-		docker run --rm --gpus all nvidia/cuda:11.0.3-base-ubuntu20.04 nvidia-smi 2>/dev/null || echo "NVIDIA GPU test failed"; \
-	elif grep -q "rocm\|/dev/kfd" docker-compose.yml 2>/dev/null; then \
-		echo "Current config: AMD GPU"; \
-		bash scripts/setup-amd.sh --test-only; \
-	else \
-		echo "Current config: CPU-only"; \
-	fi
-
 demo: start web ## Start services and show web UI link
-	@echo -e "$(GREEN)Demo ready! Services starting...$(RESET)"
+	@printf "$(GREEN)Demo ready! Services starting...$(RESET)\n"
 
 # Show current configuration
 config: ## Show current configuration
-	@echo -e "$(BLUE)Current Configuration:$(RESET)"
+	@printf "$(BLUE)Current Configuration:$(RESET)\n"
 	@echo "Model: $(grep OLLAMA_MODEL .env 2>/dev/null | cut -d'=' -f2 || echo 'Not set')"
 	@echo "Host: $(grep OLLAMA_HOST .env 2>/dev/null | cut -d'=' -f2 || echo 'Not set')"
 	@echo ""

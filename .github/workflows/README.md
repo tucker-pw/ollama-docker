@@ -2,7 +2,7 @@
 
 This directory contains CI/CD workflows for the Ollama Docker project.
 
-## docker-ci.yml
+## validation.yml
 
 Lightweight validation workflow that ensures Docker Compose configurations are correct and project structure is sound.
 
@@ -23,7 +23,7 @@ Lightweight validation workflow that ensures Docker Compose configurations are c
 - Service structure verification (ollama, webui, tts services exist)
 - Port mapping validation (11434, 3000, 8880)
 - Volume configuration checks
-- GPU configuration detection (NVIDIA vs AMD)
+- GPU configuration detection (NVIDIA only - AMD support removed)
 
 **Lightweight Service Testing:**
 - Service connectivity simulation using nginx/httpd
@@ -33,8 +33,8 @@ Lightweight validation workflow that ensures Docker Compose configurations are c
 
 ### Test Matrix
 
-- **NVIDIA Config**: `docker-compose.yml` - validates GPU runtime configuration
-- **AMD Config**: `docker-compose-amd.yml` - validates ROCm/HIP configuration
+- **Base Config**: `docker-compose.yml` - validates main configuration (CPU mode)
+- **GPU Override**: `docker-compose.gpu.yml` - validates NVIDIA GPU runtime configuration
 
 ### Validation Jobs
 
@@ -97,7 +97,7 @@ Run similar validations locally:
 ```bash
 # Validate Docker Compose syntax
 docker compose -f docker-compose.yml config --quiet
-docker compose -f docker-compose-amd.yml config --quiet
+docker compose -f docker-compose.gpu.yml config --quiet
 
 # Check script syntax
 bash -n scripts/*.sh
@@ -114,12 +114,13 @@ ls docs/ scripts/ README.md
 For full integration testing with real services:
 
 ```bash
-# NVIDIA setup
+# CPU mode (default)
 make setup
 make status
 
-# AMD setup  
-docker compose -f docker-compose-amd.yml up -d
+# GPU mode (Linux with NVIDIA GPU only)
+make setup-gpu
+make status
 
 # Test APIs
 curl http://localhost:11434/api/tags
@@ -148,7 +149,8 @@ bash -n scripts/problematic-script.sh
 **Missing Files:**
 ```bash
 # Ensure required files exist
-ls README.md docs/INSTALLATION.md docs/USAGE.md docs/AMD-GPU-SUPPORT.md
+ls README.md docs/INSTALLATION.md docs/USAGE.md
+ls scripts/setup.sh scripts/model-manager.sh scripts/cleanup.sh scripts/download-model-hf.sh
 ```
 
 **Service Configuration Issues:**

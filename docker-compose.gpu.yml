@@ -1,0 +1,15 @@
+# GPU Override for docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# This file enables NVIDIA GPU support for the ollama service
+# Requires: NVIDIA GPU + nvidia-container-toolkit installed
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

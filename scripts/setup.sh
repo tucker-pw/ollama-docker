@@ -35,34 +35,63 @@ check_docker() {
     log_success "Docker is running"
 }
 
-# Check if NVIDIA runtime is available
-check_nvidia() {
-    if ! docker run --rm --gpus all nvidia/cuda:11.0.3-base-ubuntu20.04 nvidia-smi > /dev/null 2>&1; then
-        log_warning "NVIDIA GPU support not detected. Running CPU-only mode."
-        return 1
-    fi
-    log_success "NVIDIA GPU support detected"
-    return 0
+# Wait for a service to be healthy
+wait_for_service() {
+    local service=$1
+    local max_attempts=${2:-30}  # Default 30 attempts, but can be overridden
+    local attempt=0
+
+    log_info "Waiting for $service to be ready..."
+
+    while [ $attempt -lt $max_attempts ]; do
+        # Check if container is healthy using docker inspect
+        if docker inspect "$service" --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
+            log_success "$service is ready"
+            return 0
+        fi
+        # If no health check, just verify it's running
+        if [ -z "$(docker inspect "$service" --format='{{.State.Health.Status}}' 2>/dev/null)" ]; then
+            if docker inspect "$service" --format='{{.State.Running}}' 2>/dev/null | grep -q "true"; then
+                log_success "$service is running"
+                return 0
+            fi
+        fi
+        attempt=$((attempt + 1))
+        sleep 2
+    done
+
+    log_error "$service failed to become ready after ${max_attempts} attempts"
+    return 1
 }
 
 # Setup function
 setup() {
     log_info "Setting up Ollama Docker Project..."
-    
+
     check_docker
-    
+
     # Start services
     log_info "Starting services..."
     docker compose up -d
-    
-    # Wait for Ollama to be ready
-    log_info "Waiting for Ollama to be ready..."
-    sleep 10
-    
-    # Pull the default model
-    log_info "Pulling default model (${OLLAMA_MODEL:-llama3.2:1b})..."
-    docker compose exec ollama ollama pull ${OLLAMA_MODEL:-llama3.2:1b}
-    
+
+    # Wait for services to be ready
+    wait_for_service "ollama" || exit 1
+    wait_for_service "kokoro-tts" || exit 1
+    wait_for_service "ollama-webui" 60 || exit 1  # Web UI needs more time (2 minutes)
+
+    # Download default model from HuggingFace (bypasses certificate issues)
+    log_info "Downloading default model from HuggingFace (${OLLAMA_MODEL:-llama3.2:1b})..."
+    log_info "This may take a few minutes depending on your internet connection..."
+
+    # Use HuggingFace download script (works around corporate VPN/certificate issues)
+    if bash scripts/download-model-hf.sh ${OLLAMA_MODEL:-llama3.2:1b} 2>&1; then
+        log_success "Model downloaded and imported successfully"
+    else
+        log_warning "Model download failed"
+        log_info "You can manually download models with: make pull-hf llama3.2:1b"
+        log_info "Or try the Web UI at http://localhost:3000"
+    fi
+
     log_success "Setup complete!"
     log_info "Services running:"
     log_info "  - Ollama API: http://localhost:11434"
@@ -76,6 +105,49 @@ start() {
     log_info "Starting services..."
     docker compose up -d
     log_success "Services started"
+}
+
+# Start with GPU function
+start_gpu() {
+    log_info "Starting services with GPU support..."
+    docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+    log_success "Services started with GPU support"
+}
+
+# Setup with GPU function
+setup_gpu() {
+    log_info "Setting up Ollama Docker Project with GPU support..."
+
+    check_docker
+
+    # Start services with GPU
+    log_info "Starting services with GPU support..."
+    docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+    # Wait for services to be ready
+    wait_for_service "ollama" || exit 1
+    wait_for_service "kokoro-tts" || exit 1
+    wait_for_service "ollama-webui" 60 || exit 1  # Web UI needs more time (2 minutes)
+
+    # Download default model from HuggingFace (bypasses certificate issues)
+    log_info "Downloading default model from HuggingFace (${OLLAMA_MODEL:-llama3.2:1b})..."
+    log_info "This may take a few minutes depending on your internet connection..."
+
+    # Use HuggingFace download script (works around corporate VPN/certificate issues)
+    if bash scripts/download-model-hf.sh ${OLLAMA_MODEL:-llama3.2:1b} 2>&1; then
+        log_success "Model downloaded and imported successfully"
+    else
+        log_warning "Model download failed"
+        log_info "You can manually download models with: make pull-hf llama3.2:1b"
+        log_info "Or try the Web UI at http://localhost:3000"
+    fi
+
+    log_success "Setup complete with GPU support!"
+    log_info "Services running:"
+    log_info "  - Ollama API: http://localhost:11434"
+    log_info "  - Web UI: http://localhost:3000"
+    log_info ""
+    log_info "Open your browser to http://localhost:3000 to start chatting!"
 }
 
 # Stop function
@@ -97,11 +169,13 @@ status() {
 
 # Help function
 help() {
-    echo "Usage: $0 {setup|start|stop|logs|status|help}"
+    echo "Usage: $0 {setup|setup-gpu|start|start-gpu|stop|logs|status|help}"
     echo ""
     echo "Commands:"
-    echo "  setup       - Initial setup (start services, pull default model)"
-    echo "  start       - Start all services"
+    echo "  setup       - Initial setup (CPU mode)"
+    echo "  setup-gpu   - Initial setup with NVIDIA GPU support"
+    echo "  start       - Start all services (CPU mode)"
+    echo "  start-gpu   - Start all services with GPU support"
     echo "  stop        - Stop all services"
     echo "  logs        - Show logs from all services"
     echo "  status      - Show service status"
@@ -115,8 +189,14 @@ case "${1:-}" in
     setup)
         setup
         ;;
+    setup-gpu)
+        setup_gpu
+        ;;
     start)
         start
+        ;;
+    start-gpu)
+        start_gpu
         ;;
     stop)
         stop

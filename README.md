@@ -7,19 +7,43 @@ Uses the WebUI from this project: https://github.com/open-webui/open-webui
 
 - **Local AI models** - Complete privacy, no cloud dependencies
 - **Voice conversations** - Speech-to-text and text-to-speech
-- **Multiple interfaces** - Command-line, web UI, and voice
-- **GPU acceleration** - Automatic NVIDIA/AMD GPU detection
+- **Multiple interfaces** - Web UI with voice support
+- **GPU acceleration** - NVIDIA GPU support (CPU fallback available)
 - **67+ TTS voices** - Multiple languages via Kokoro TTS
 - **Simple commands** - `make` commands instead of complex Docker
+- **VSCode integration** - Use as coding agent via Continue extension
 
 ## Quick Start
 
 ```bash
-make setup    # First-time setup (includes voice)
-make web      # Open http://localhost:3000
+make setup    # First-time setup - automatically downloads llama3.2:1b from HuggingFace
 ```
 
-Click the microphone icon for voice conversations.
+That's it! The setup will:
+1. Start all Docker containers
+2. Download the default model (llama3.2:1b ~770MB) from HuggingFace
+3. Import it into Ollama
+4. Open http://localhost:3000 in your browser and start chatting!
+
+**Note**: The HuggingFace download bypasses corporate VPN/certificate issues that affect direct Ollama registry downloads.
+
+**Recommended Models**:
+- **llama3.2:1b** (~770MB) - Fastest, great for CPU, default
+- **llama3.2:3b** (~2GB) - Balanced performance
+- **llama3.2:11b** (~7GB) - Highest quality (GPU recommended)
+
+Download additional models with:
+```bash
+make pull-hf llama3.2:3b    # Download from HuggingFace
+```
+
+### GPU Support (Optional)
+
+If you have an NVIDIA GPU with nvidia-container-toolkit installed (Linux only):
+
+```bash
+make setup-gpu  # Setup with GPU acceleration
+```
 
 ## Available Models
 
@@ -34,28 +58,63 @@ Switch models: `make switch llama3.2:3b`
 ## Requirements
 
 - **Docker & Docker Compose**
-- **8GB+ RAM**
-- **Microphone** (for voice features)
-- **GPU** (optional): NVIDIA (all platforms) or AMD (Linux only)
+- **8GB+ RAM** (16GB+ recommended for larger models)
+- **10GB+ disk space** for models
+- **NVIDIA GPU** (optional, for GPU acceleration on Linux)
+  - Requires nvidia-container-toolkit
+  - Use `make setup-gpu` instead of `make setup`
+
+**Note**: CPU-only mode works great on Apple Silicon (M1/M2/M3) and modern CPUs for smaller models (1B-3B parameters)
 
 ## Commands
 
 ```bash
-make setup              # Initial setup
-make web                # Web UI (http://localhost:3000)
-make switch MODEL       # Change model
-make fast/balanced/quality  # Quick model switches
-make status/logs        # Check services
-make clean/reset        # Cleanup
+# Setup & Control
+make setup              # Initial setup (CPU mode)
+make setup-gpu          # Setup with NVIDIA GPU support
+make start              # Start services (CPU mode)
+make start-gpu          # Start with GPU support
+make stop               # Stop all services
+make restart            # Restart services
+make status             # Show service status
+make logs               # View service logs
+
+# Model Management
+make list-models        # List available models
+make switch MODEL       # Switch model (e.g., make switch llama3.2:3b)
+make pull MODEL         # Download a specific model
+make pull-hf MODEL      # Download from HuggingFace (bypasses VPN/cert issues)
+
+# Quick Model Shortcuts
+make cpu                # Switch to llama3.2:1b (fastest)
+make gpu                # Switch to llama3.2:3b (balanced)
+make quality            # Switch to llama3.2:11b (best quality)
+make code               # Switch to codellama:7b (code-focused)
+
+# Web Interface
+make web                # Show Web UI URL
+
+# Cleanup
+make clean              # Clean up containers/volumes
+make reset              # Full reset (removes all data)
 ```
 
-## Voice Setup
+## Voice Features (Pre-configured)
 
-Voice features work automatically on most systems. For configuration:
+Text-to-speech is **pre-configured** with Kokoro TTS! Just click the speaker icon to hear responses.
 
+**Default voice**: `af_bella` (warm, natural English)
+
+**To change voices**:
 1. Visit http://localhost:3000
-2. Admin Settings → Audio
-3. Configure TTS: API Base URL `http://kokoro-tts:8880/v1`, API Key `not-needed`
+2. Go to **Settings → Audio**
+3. Select a different voice from the dropdown (67+ voices available)
+
+**Available voice options**:
+- English: `af_bella`, `af_alloy`, `af_heart`, `af_nicole`, `af_sarah`
+- Other languages: Japanese, Chinese, Korean, Spanish, French, and more
+
+**Note**: Voice features work best on Linux. macOS/Windows users can still use voice, but text chat is more reliable.
 
 ## Architecture
 
@@ -65,11 +124,15 @@ Voice features work automatically on most systems. For configuration:
 
 ## Documentation
 
-- [INSTALLATION.md](./docs/INSTALLATION.md) - Setup instructions
-- [USAGE.md](./docs/USAGE.md) - Usage examples
-- [AMD-GPU-SUPPORT.md](./docs/AMD-GPU-SUPPORT.md) - AMD GPU setup
+- [INSTALLATION.md](./docs/INSTALLATION.md) - Detailed setup instructions
+- [USAGE.md](./docs/USAGE.md) - Usage examples and tips
 
-### Other Uses
+## VSCode Integration
 
-- Added [continue config](./continue-config.yml) so these local models can be used as coding agents within VSCode. 
-- See: https://marketplace.visualstudio.com/items?itemName=Continue.continue for more details.
+Use your local models as coding agents in VSCode with the [Continue extension](https://marketplace.visualstudio.com/items?itemName=Continue.continue):
+
+1. Install the Continue extension in VSCode
+2. Copy [continue-config.yml](./continue-config.yml) to your Continue config directory
+3. Start using your local models for code assistance
+
+The included config provides access to all models running in your local Ollama instance.

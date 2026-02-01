@@ -21,7 +21,6 @@ jobs:
           test -f README.md
           test -f docs/INSTALLATION.md
           test -f docs/USAGE.md
-          test -f docs/AMD-GPU-SUPPORT.md
           
       - name: Validate Makefile
         run: |
@@ -30,9 +29,9 @@ jobs:
       - name: Check required scripts
         run: |
           test -f scripts/setup.sh
-          test -f scripts/model-manager.sh  
+          test -f scripts/model-manager.sh
           test -f scripts/cleanup.sh
-          test -f scripts/setup-amd.sh
+          test -f scripts/download-model-hf.sh
 
   validate-scripts:
     runs-on: ubuntu-latest
@@ -67,10 +66,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file: 
+        compose_file:
           - docker-compose.yml
-          - docker-compose-amd.yml
-    
+          - docker-compose.gpu.yml
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,43 +77,53 @@ jobs:
       - name: Validate ${{ matrix.compose_file }} syntax
         run: |
           echo "Validating ${{ matrix.compose_file }}"
-          docker compose -f ${{ matrix.compose_file }} config --quiet
+          if [[ "${{ matrix.compose_file }}" == "docker-compose.gpu.yml" ]]; then
+            echo "GPU override file - validating with base config"
+            docker compose -f docker-compose.yml -f ${{ matrix.compose_file }} config --quiet
+          else
+            docker compose -f ${{ matrix.compose_file }} config --quiet
+          fi
           echo "✓ ${{ matrix.compose_file }} syntax is valid"
 
       - name: Check compose file structure
         run: |
           echo "=== Analyzing ${{ matrix.compose_file }} structure ==="
-          
+
+          # Set compose command based on file type
+          if [[ "${{ matrix.compose_file }}" == "docker-compose.gpu.yml" ]]; then
+            COMPOSE_CMD="docker compose -f docker-compose.yml -f ${{ matrix.compose_file }}"
+          else
+            COMPOSE_CMD="docker compose -f ${{ matrix.compose_file }}"
+          fi
+
           # Check services are defined
-          SERVICES=$(docker compose -f ${{ matrix.compose_file }} config --services)
+          SERVICES=$($COMPOSE_CMD config --services)
           echo "Services defined: $SERVICES"
-          
+
           # Verify expected services exist
           echo "$SERVICES" | grep -q "ollama" && echo "✓ ollama service found"
           echo "$SERVICES" | grep -q "ollama-webui" && echo "✓ ollama-webui service found"
           echo "$SERVICES" | grep -q "kokoro-tts" && echo "✓ kokoro-tts service found"
-          
+
           # Check for required ports
-          docker compose -f ${{ matrix.compose_file }} config | grep -q "11434:11434" && echo "✓ Ollama port mapping found"
-          docker compose -f ${{ matrix.compose_file }} config | grep -q "3000:8080" && echo "✓ Web UI port mapping found"
-          docker compose -f ${{ matrix.compose_file }} config | grep -q "8880:8880" && echo "✓ TTS port mapping found"
-          
+          $COMPOSE_CMD config | grep -q "11434:11434" && echo "✓ Ollama port mapping found"
+          $COMPOSE_CMD config | grep -q "3000:8080" && echo "✓ Web UI port mapping found"
+          $COMPOSE_CMD config | grep -q "8880:8880" && echo "✓ TTS port mapping found"
+
           # Check volumes are defined
-          VOLUMES=$(docker compose -f ${{ matrix.compose_file }} config --volumes)
+          VOLUMES=$($COMPOSE_CMD config --volumes)
           echo "Volumes defined: $VOLUMES"
 
-      - name: Check configuration differences
+      - name: Check GPU configuration
         run: |
-          echo "=== Configuration analysis for ${{ matrix.compose_file }} ==="
-          
-          if [[ "${{ matrix.compose_file }}" == "docker-compose.yml" ]]; then
-            echo "NVIDIA/GPU configuration detected:"
-            docker compose -f ${{ matrix.compose_file }} config | grep -i nvidia || echo "No NVIDIA runtime found"
-            docker compose -f ${{ matrix.compose_file }} config | grep -E "(runtime|NVIDIA)" || echo "No GPU config found"
+          echo "=== GPU Configuration Check ==="
+
+          if [[ "${{ matrix.compose_file }}" == "docker-compose.gpu.yml" ]]; then
+            echo "Checking NVIDIA GPU configuration..."
+            docker compose -f docker-compose.yml -f ${{ matrix.compose_file }} config | grep -i nvidia && echo "✓ NVIDIA GPU config found"
+            docker compose -f docker-compose.yml -f ${{ matrix.compose_file }} config | grep -i "gpu" && echo "✓ GPU capabilities configured"
           else
-            echo "AMD configuration detected:"
-            docker compose -f ${{ matrix.compose_file }} config | grep -i rocm || echo "No ROCm image found"
-            docker compose -f ${{ matrix.compose_file }} config | grep -E "(kfd|dri|HIP_|ROC)" || echo "No AMD GPU config found"
+            echo "Base configuration (CPU mode) - no GPU config expected"
           fi
 
   test-lightweight-services:

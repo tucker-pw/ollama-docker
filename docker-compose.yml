@@ -1,5 +1,5 @@
 services:
-  # Ollama service with GPU support
+  # Ollama service (GPU support optional via deploy.resources)
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -8,10 +8,20 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-    runtime: nvidia
+    # GPU support - uncomment if you have NVIDIA GPU + nvidia-container-toolkit
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Kokoro TTS service (CPU version - more reliable)
   kokoro-tts:
@@ -20,6 +30,12 @@ services:
     restart: unless-stopped
     ports:
       - "8880:8880"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8880/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 
   # Web interface for Ollama (Open WebUI)
   ollama-webui:
@@ -31,21 +47,40 @@ services:
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_AUTH=false
-      - PULSE_RUNTIME_PATH=/run/user/1000/pulse
-      - PULSE_SERVER=unix:/run/user/1000/pulse/native
-      - XDG_RUNTIME_DIR=/run/user/1000
+      # TTS Configuration (Kokoro TTS)
+      - AUDIO_TTS_ENGINE=openai
+      - AUDIO_TTS_OPENAI_API_BASE_URL=http://kokoro-tts:8880/v1
+      - AUDIO_TTS_OPENAI_API_KEY=not-needed
+      - AUDIO_TTS_MODEL=kokoro
+      - AUDIO_TTS_VOICE=af_bella
+      # STT Configuration (Optional - for speech-to-text)
+      - AUDIO_STT_ENGINE=openai
+      - AUDIO_STT_OPENAI_API_BASE_URL=http://kokoro-tts:8880/v1
+      - AUDIO_STT_OPENAI_API_KEY=not-needed
     depends_on:
-      - ollama
-      - kokoro-tts
+      ollama:
+        condition: service_healthy
+      kokoro-tts:
+        condition: service_healthy
     volumes:
       - ollama_webui_data:/app/backend/data
-      - /dev/shm:/dev/shm
-      - /run/user/1000/pulse:/run/user/1000/pulse:rw
-      - /run/user/1000/pipewire-0:/run/user/1000/pipewire-0:rw
-    devices:
-      - /dev/snd:/dev/snd
-    security_opt:
-      - seccomp:unconfined
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080').read()\" || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    # Linux-specific audio support - uncomment on Linux systems
+    # volumes:
+    #   - /dev/shm:/dev/shm
+    #   - /run/user/1000/pulse:/run/user/1000/pulse:rw
+    #   - /run/user/1000/pipewire-0:/run/user/1000/pipewire-0:rw
+    # devices:
+    #   - /dev/snd:/dev/snd
+    # environment:
+    #   - PULSE_RUNTIME_PATH=/run/user/1000/pulse
+    #   - PULSE_SERVER=unix:/run/user/1000/pulse/native
+    #   - XDG_RUNTIME_DIR=/run/user/1000
 
 volumes:
   ollama_data:

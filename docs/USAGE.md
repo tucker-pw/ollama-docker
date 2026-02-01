@@ -5,10 +5,11 @@ This guide covers everything you need to know about using the Ollama Project eff
 
 ```bash
 make                    # Show all commands
-make web                    # Open web interface
-make switch MODEL           # Change AI model  
-make fast/balanced/quality  # Quick model switches
-make status                 # Check services
+make web                # Show web interface URL
+make switch MODEL       # Change AI model
+make cpu/gpu/quality    # Quick model switches
+make status             # Check services
+make logs               # View service logs
 ```
 
 ## Interfaces
@@ -24,11 +25,6 @@ make status                 # Check services
 - File uploads and chat history
 - Model switching via dropdown
 
-### Command Line
-```bash
-make chat  # Terminal-based interaction
-```
-
 ## Model Selection
 
 | Model | Best For | Speed | Resource Use |
@@ -39,8 +35,8 @@ make chat  # Terminal-based interaction
 | codellama:7b | Programming help | Medium | Medium (GPU preferred) |
 
 ```bash
-make fast      # llama3.2:1b
-make balanced  # llama3.2:3b (default)
+make cpu       # llama3.2:1b
+make gpu       # llama3.2:3b
 make quality   # llama3.2:11b
 make code      # codellama:7b
 ```
@@ -84,7 +80,7 @@ make code     # Programming-focused model
 
 ### Quick Q&A
 ```bash
-make fast     # Fastest responses
+make cpu      # Fastest responses
 # Voice: "What's the weather like today?"
 # Good for rapid back-and-forth
 ```
@@ -92,15 +88,32 @@ make fast     # Fastest responses
 ## Configuration
 
 ### Web Interface Settings
-- **Model selection**: Dropdown in web UI
-- **Voice settings**: Admin Settings → Audio
+- **Model selection**: Dropdown in web UI (switch between downloaded models)
+- **Voice settings**: Admin Settings → Audio (optional, Linux recommended)
 - **Chat history**: Automatically saved
 
-### Environment Variables
-Edit `.env` file for defaults:
+### Model Downloads
+Download additional models from HuggingFace (bypasses VPN/certificate issues):
 ```bash
-OLLAMA_MODEL=llama3.2:3b
-OLLAMA_HOST=http://ollama:11434
+make pull-hf llama3.2:3b    # Download from HuggingFace
+make list-models            # List downloaded models
+make switch llama3.2:3b     # Switch active model
+```
+
+### Environment Variables
+Create `.env` file from `.env.example` for defaults:
+```bash
+cp .env.example .env
+# Edit .env to set your preferred default model
+OLLAMA_MODEL=llama3.2:1b  # or llama3.2:3b, etc.
+OLLAMA_HOST=http://localhost:11434
+```
+
+### GPU Mode (Linux Only)
+If you have NVIDIA GPU + nvidia-container-toolkit:
+```bash
+make setup-gpu    # Initial setup with GPU
+make start-gpu    # Start with GPU support
 ```
 
 ## Maintenance
@@ -109,7 +122,30 @@ OLLAMA_HOST=http://ollama:11434
 make status    # Check all services
 make logs      # View service logs
 make restart   # Restart everything
+make stop      # Stop all services
+make start     # Start services (CPU mode)
+make start-gpu # Start with GPU (Linux only)
 make clean     # Remove containers, volumes, networks
+make reset     # Full reset (with confirmation)
 ```
+
+## Platform-Specific Notes
+
+### macOS (Including Apple Silicon)
+- Use CPU mode (`make setup`)
+- Apple Silicon (M1/M2/M3) performs excellently with smaller models
+- Voice features have limitations; text chat works perfectly
+- Models automatically download from HuggingFace during setup
+
+### Linux
+- Both CPU and GPU modes supported
+- GPU mode requires NVIDIA GPU + nvidia-container-toolkit
+- All features including voice work well
+- Use `make setup-gpu` for GPU acceleration
+
+### Windows
+- Use CPU mode via Docker Desktop
+- Voice features have limitations; text chat works perfectly
+- WSL2 backend recommended for better performance
 
 For installation issues, see [INSTALLATION.md](./INSTALLATION.md).
